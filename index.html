@@ -209,8 +209,6 @@ aesGcmDecrypt(data, key).then(decrypted => {
 
         if (episodes[episode - 1]) {
             playEpisodeFromUrl(episodes[episode - 1], time);
-        } else {
-            alert('episode not found')
         }
     } else {
         localStorage.removeItem('github-io-player-secret');
