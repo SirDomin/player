@@ -47,17 +47,35 @@
             background-color: #3e8e41;
             box-shadow: 0 5px #666;
         }
+        .steering-container {
+            display: grid;
+            grid-template-columns: auto auto;
+            width: 100%;
+            padding: 0;
+            color: rgb(240, 236, 229);
+        }
+        .active {
+            background-color: #3e8e41;
+            box-shadow: 0 5px #666;
+        }
+        .steering-container > .episode-button-utils {
+            width: 46vw;
+        }
     </style>
 </head>
 <body>
 <div class="container">
     <video
-            id="player"
-            controls
+        id="player"
+        controls
     >
     </video>
 
-    <div class="episode-button-utils" id="random-episode">Random</div>
+    <div class="steering-container">
+        <div class="episode-button-utils" id="random-episode">Random</div>
+        <div class="episode-button-utils" id="autoplay-episode">Autoplay</div>
+    </div>
+
     <div class="episode-button-utils" id="share-episode">Share Episode</div>
     <div class="episode-button-utils" id="share-scene">Share Moment</div>
     <div id="episodes-container">
@@ -71,6 +89,11 @@
 <script>
 
 let episodes = [];
+
+let autoplay = false;
+let maxEpisodesAutoplay = 3;
+
+let autoplayEpisodes = maxEpisodesAutoplay;
 
 function parseToArray(text) {
     return text.split('.mp4');
@@ -137,8 +160,14 @@ function playEpisode(episode, time) {
 
 document.getElementById('random-episode').onclick = function() {
     let randomEpisode = episodes[Math.floor(Math.random()*episodes.length)];
-
     playEpisode(randomEpisode);
+}
+
+document.getElementById('autoplay-episode').onclick = function() {
+    this.classList.toggle('active');
+
+    autoplayEpisodes = maxEpisodesAutoplay;
+    autoplay = !autoplay;
 }
 
 document.getElementById('share-episode').onclick = function() {
@@ -206,6 +235,7 @@ aesGcmDecrypt(data, key).then(decrypted => {
             episodes.push(episodeObject);
 
         });
+        episodes.pop();
 
         if (episodes[episode - 1]) {
             playEpisodeFromUrl(episodes[episode - 1], time);
@@ -234,7 +264,30 @@ HTMLVideoElement.prototype.play = (function(play) {
     };
 })(HTMLVideoElement.prototype.play);
 
-episodes.pop();
+let player = document.getElementById('player');
+player.addEventListener('touchstart', e => {
+    if(player.paused) {
+        player.play();
+    } else {
+        player.pause();
+    }
+})
+
+player.addEventListener('progress', event => {
+    if (autoplay) {
+        if (player.currentTime + 30 > player.duration && maxEpisodesAutoplay > 0) {
+            let randomEpisode = episodes[Math.floor(Math.random()*episodes.length)];
+            playEpisode(randomEpisode);
+            player.requestFullscreen()
+            maxEpisodesAutoplay--;
+
+            if (maxEpisodesAutoplay === 0) {
+                document.getElementById('autoplay-episode').click();
+            }
+        }
+    }
+});
+
 </script>
 </body>
 </html>
