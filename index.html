@@ -134,9 +134,12 @@ function loadEpisode(episode) {
     let episodeContainer = document.createElement('div');
     episodeContainer.setAttribute('url', episode.url);
     episodeContainer.innerHTML = `${episode.index}. ${episode.title}`;
+    let videoPlayer = document.getElementById('player');
 
     episodeContainer.onclick = function(event) {
+        window.scrollTo(0, 0);
         playEpisode(episode)
+        videoPlayer.requestFullscreen();
     }
 
     document.getElementById('episodes-container').append(episodeContainer);
