@@ -5,6 +5,7 @@
     <title>Player</title>
     <style>
         body {
+            touch-action: manipulation;
             margin: 0;
             background: #404040;
         }
@@ -158,6 +159,7 @@ function playEpisode(episode, time) {
     videoPlayer.currentTime = time ?? calculateTime(episode.index);
     videoPlayer.play();
 
+    document.title = `[${episode.index}] ${episode.title}`;
     window.history.pushState("", "", `?episode=${episode.index}&t=${videoPlayer.currentTime}`);
 }
 
