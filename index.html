@@ -27,7 +27,7 @@
             cursor: pointer;
         }
 
-        #episodes-container > div {
+        .episode-container {
             display: flex;
             font-size: 2em;
             padding: 10px;
@@ -62,6 +62,12 @@
         .steering-container > .episode-button-utils {
             width: 46vw;
         }
+        .watched {
+            color: #3e8e41;
+        }
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -72,9 +78,18 @@
     >
     </video>
 
-    <div class="steering-container">
-        <div class="episode-button-utils" id="random-episode">Random</div>
-        <div class="episode-button-utils" id="autoplay-episode">Autoplay</div>
+    <div class="episode-button-utils" id="random-episode">Play random episode</div>
+
+    <div class="settings-container">
+        <div id="settings-toggle" class="episode-button-utils">Show settings</div>
+        <div class="steering-container hidden" id="settings">
+            <div class="episode-button-utils" id="autoplay-episode-random">Random</div>
+            <div class="episode-button-utils" id="autoplay-episode">Autoplay</div>
+            <div class="episode-button-utils" id="hide-watched-episodes">Hide watched episodes</div>
+            <div class="episode-button-utils" id="auto-full-screen">Auto fullScreen</div>
+            <div class="episode-button-utils" id="allow-watched">Allow watched on autoplay</div>
+            <div class="episode-button-utils" id="max-autoplay">Max autoplay</div>
+        </div>
     </div>
 
     <div class="episode-button-utils" id="share-episode">Share Episode</div>
@@ -90,11 +105,94 @@
 <script>
 
 let episodes = [];
+let episodesNotWatched = [];
 
 let autoplay = false;
+let autoplayRandom = false;
+let hideWatchedEpisodes = false;
+let autoFullScreen = false;
 let maxEpisodesAutoplay = 3;
+let allowWatched = false;
 
 let autoplayEpisodes = maxEpisodesAutoplay;
+
+let episodesWatched = [];
+
+
+document.getElementById('random-episode').onclick = function() {
+    let randomEpisode = getRandomEpisode();
+
+    playEpisode(randomEpisode);
+}
+
+document.getElementById('hide-watched-episodes').onclick = function() {
+    hideWatchedEpisodes = !hideWatchedEpisodes;
+    this.classList.toggle('active');
+    saveSettings();
+
+    reloadEpisodeView();
+}
+
+document.getElementById('allow-watched').onclick = function() {
+    allowWatched = !allowWatched;
+    this.classList.toggle('active');
+    saveSettings();
+}
+
+document.getElementById('max-autoplay').onclick = function() {
+    let inputNumber = parseInt(prompt('Max episodes to play: '));
+    if (inputNumber < 0 || inputNumber > 100 || !inputNumber) {
+        alert('give number between 0 and 100');
+        return;
+    }
+
+    maxEpisodesAutoplay = inputNumber;
+    autoplayEpisodes = inputNumber;
+    this.innerHTML = `Max episodes: ${maxEpisodesAutoplay === 0 ? 'no limit' : maxEpisodesAutoplay}`;
+    saveSettings();
+}
+
+document.getElementById('auto-full-screen').onclick = function() {
+    autoFullScreen = !autoFullScreen;
+    this.classList.toggle('active');
+    saveSettings();
+}
+
+document.getElementById('autoplay-episode-random').onclick = function() {
+    autoplayRandom = !autoplayRandom;
+    this.classList.toggle('active');
+    saveSettings();
+}
+
+document.getElementById('settings-toggle').onclick = function() {
+    this.classList.toggle('active');
+    document.getElementById('settings').classList.toggle('hidden');
+}
+
+document.getElementById('autoplay-episode').onclick = function() {
+    this.classList.toggle('active');
+
+    autoplayEpisodes = maxEpisodesAutoplay;
+    autoplay = !autoplay;
+    saveSettings();
+}
+
+document.getElementById('share-episode').onclick = function() {
+    navigator.clipboard.writeText(window.location.href);
+}
+
+document.getElementById('share-scene').onclick = function() {
+    const urlParams = new URLSearchParams(window.location.search);
+
+    const episode = urlParams.get('episode');
+    const videoPlayer = document.getElementById('player');
+
+    const prevUrl = window.location.href;
+
+    window.history.pushState("", "", `?episode=${episode}&t=${Math.floor(videoPlayer.currentTime)}`);
+    navigator.clipboard.writeText(window.location.href);
+    window.history.pushState("", "", prevUrl);
+}
 
 function parseToArray(text) {
     return text.split('.mp4');
@@ -134,13 +232,25 @@ function loadEpisode(episode) {
     if (episode.url === '') return;
     let episodeContainer = document.createElement('div');
     episodeContainer.setAttribute('url', episode.url);
+    episodeContainer.classList.add('episode-container');
     episodeContainer.innerHTML = `${episode.index}. ${episode.title}`;
     let videoPlayer = document.getElementById('player');
+
+    if (episodesWatched.includes(episode.index.toString())) {
+        episodeContainer.classList.add('watched');
+        if (hideWatchedEpisodes === true) {
+            episodeContainer.classList.add('hidden');
+        }
+    } else {
+        episodesNotWatched.push(episode);
+    }
 
     episodeContainer.onclick = function(event) {
         window.scrollTo(0, 0);
         playEpisode(episode)
-        videoPlayer.requestFullscreen();
+        if (autoFullScreen === true) {
+            videoPlayer.requestFullscreen();
+        }
     }
 
     document.getElementById('episodes-container').append(episodeContainer);
@@ -161,35 +271,6 @@ function playEpisode(episode, time) {
 
     document.title = `[${episode.index}] ${episode.title}`;
     window.history.pushState("", "", `?episode=${episode.index}&t=${videoPlayer.currentTime}`);
-}
-
-document.getElementById('random-episode').onclick = function() {
-    let randomEpisode = episodes[Math.floor(Math.random()*episodes.length)];
-    playEpisode(randomEpisode);
-}
-
-document.getElementById('autoplay-episode').onclick = function() {
-    this.classList.toggle('active');
-
-    autoplayEpisodes = maxEpisodesAutoplay;
-    autoplay = !autoplay;
-}
-
-document.getElementById('share-episode').onclick = function() {
-    navigator.clipboard.writeText(window.location.href);
-}
-
-document.getElementById('share-scene').onclick = function() {
-    const urlParams = new URLSearchParams(window.location.search);
-
-    const episode = urlParams.get('episode');
-    const videoPlayer = document.getElementById('player');
-
-    const prevUrl = window.location.href;
-
-    window.history.pushState("", "", `?episode=${episode}&t=${Math.floor(videoPlayer.currentTime)}`);
-    navigator.clipboard.writeText(window.location.href);
-    window.history.pushState("", "", prevUrl);
 }
 
 let data = document.getElementById('data').innerHTML;
@@ -223,32 +304,50 @@ async function aesGcmDecrypt(ciphertext, password) {
     }
 }
 
+function reloadEpisodeView() {
+    document.getElementById('episodes-container').innerHTML = '';
 
-aesGcmDecrypt(data, key).then(decrypted => {
-    data = decrypted;
+    parseToArray(data).forEach(episode => {
+        episodes = [];
+        let episodeObject = getEpisodeObject(episode.replace(/SEZON \d+/, '').replace(/(\r\n|\n|\r)/gm, "") + '.mp4');
 
-    const urlParams = new URLSearchParams(window.location.search);
+        loadEpisode(episodeObject);
+        episodes.push(episodeObject);
+    });
+    episodes.pop();
+}
 
-    const episode = urlParams.get('episode');
-    const time = urlParams.get('t');
+function loadData(dataEncrypted, key) {
+    aesGcmDecrypt(dataEncrypted, key).then(decrypted => {
+        data = decrypted;
 
-    if (data) {
-        parseToArray(data).forEach(episode => {
-            let episodeObject = getEpisodeObject(episode.replace(/SEZON \d+/, '').replace(/(\r\n|\n|\r)/gm, "") + '.mp4');
+        const urlParams = new URLSearchParams(window.location.search);
 
-            loadEpisode(episodeObject);
-            episodes.push(episodeObject);
+        const episode = urlParams.get('episode');
+        const time = urlParams.get('t');
 
-        });
-        episodes.pop();
+        if (data) {
+            loadSavedEpisodes();
+            loadSettings();
 
-        if (episodes[episode - 1]) {
-            playEpisodeFromUrl(episodes[episode - 1], time);
+            parseToArray(data).forEach(episode => {
+                let episodeObject = getEpisodeObject(episode.replace(/SEZON \d+/, '').replace(/(\r\n|\n|\r)/gm, "") + '.mp4');
+
+                loadEpisode(episodeObject);
+                episodes.push(episodeObject);
+
+            });
+            episodes.pop();
+
+            if (episodes[episode - 1]) {
+                playEpisodeFromUrl(episodes[episode - 1], time);
+            }
+
+        } else {
+            localStorage.removeItem('github-io-player-secret');
         }
-    } else {
-        localStorage.removeItem('github-io-player-secret');
-    }
-})
+    })
+}
 
 function playEpisodeFromUrl(episode, time) {
     playEpisode(episode, time)
@@ -256,6 +355,36 @@ function playEpisodeFromUrl(episode, time) {
 
 function calculateTime(index){
     return 30;
+}
+
+function episodeWatched(episode) {
+    if (!episodesWatched.includes(episode.index)) {
+        episodesWatched.push(episode.index);
+        console.log(`episode ${episode.index} watched`);
+        console.log(episodesWatched);
+        localStorage.setItem('github-io-player-episodes', JSON.stringify(episodesWatched))
+    }
+
+}
+
+function loadSavedEpisodes() {
+    let savedEpisodes = localStorage.getItem('github-io-player-episodes');
+
+    if (!savedEpisodes) {
+        localStorage.setItem('github-io-player-episodes', JSON.stringify([]))
+    }
+
+    episodesWatched = JSON.parse(savedEpisodes);
+}
+
+function getIndexFromUrl() {
+    const urlParams = new URLSearchParams(window.location.search);
+
+    return urlParams.get('episode');
+}
+
+function getCurrentEpisode() {
+    return episodes[getIndexFromUrl() - 1];
 }
 
 HTMLVideoElement.prototype.play = (function(play) {
@@ -279,19 +408,93 @@ player.addEventListener('touchstart', e => {
 })
 
 player.addEventListener('progress', event => {
-    if (autoplay) {
-        if (player.currentTime + 30 > player.duration && maxEpisodesAutoplay > 0) {
-            let randomEpisode = episodes[Math.floor(Math.random()*episodes.length)];
-            playEpisode(randomEpisode);
-            player.requestFullscreen()
-            maxEpisodesAutoplay--;
+    if (player.currentTime + 30 > player.duration) {
+        episodeWatched(getCurrentEpisode());
 
-            if (maxEpisodesAutoplay === 0) {
-                document.getElementById('autoplay-episode').click();
+        if (autoplay) {
+            if (autoplayEpisodes > 0) {
+                autoplayNextEpisode();
+
+                if (autoFullScreen === true) {
+                    player.requestFullscreen()
+                }
+                autoplayEpisodes--;
+
+                if (autoplayEpisodes === 0) {
+                    document.getElementById('autoplay-episode').click();
+                }
             }
         }
     }
 });
+
+function loadSettings() {
+    const settingsData = localStorage.getItem('github-io-player-settings');
+
+    if (settingsData) {
+        const settings = JSON.parse(settingsData);
+
+        if (settings.autoplay === true) {
+            document.getElementById('autoplay-episode').click();
+        }
+        if (settings.autoplayRandom === true) {
+            document.getElementById('autoplay-episode-random').click();
+        }
+        if (settings.autoFullScreen === true) {
+            document.getElementById('auto-full-screen').click();
+        }
+        if (settings.hideWatchedEpisodes === true) {
+            hideWatchedEpisodes = !hideWatchedEpisodes;
+            document.getElementById('hide-watched-episodes').classList.toggle('active');
+
+            reloadEpisodeView();
+        }
+        if (settings.allowWatched === true) {
+            document.getElementById('allow-watched').click();
+        }
+        if (settings.maxEpisodesAutoplay) {
+            maxEpisodesAutoplay = parseInt(settings.maxEpisodesAutoplay);
+            document.getElementById('max-autoplay').innerHTML = `Max episodes: ${maxEpisodesAutoplay === 0 ? 'no limit' : maxEpisodesAutoplay}`;
+            autoplayEpisodes = maxEpisodesAutoplay;
+        }
+    }
+}
+
+function saveSettings() {
+    const settings = {
+        autoplay: autoplay,
+        autoplayRandom: autoplayRandom,
+        hideWatchedEpisodes: hideWatchedEpisodes,
+        autoFullScreen: autoFullScreen,
+        maxEpisodesAutoplay: maxEpisodesAutoplay,
+        allowWatched: allowWatched
+    }
+
+    localStorage.setItem('github-io-player-settings', JSON.stringify(settings))
+}
+
+function autoplayNextEpisode() {
+    let nextEpisode = 1;
+    if (autoplayRandom === true) {
+        nextEpisode = getRandomEpisode();
+    } else {
+        nextEpisode = episodes[getIndexFromUrl()];
+    }
+
+    if (nextEpisode) {
+        playEpisode(nextEpisode);
+    }
+}
+
+function getRandomEpisode() {
+    if (allowWatched) {
+        return episodes[Math.floor(Math.random()*episodes.length)];
+    }
+
+    return episodesNotWatched[Math.floor(Math.random()*episodesNotWatched.length)];
+}
+
+loadData(data, key);
 
 </script>
 </body>
