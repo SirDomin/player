@@ -118,6 +118,7 @@ let autoplayEpisodes = maxEpisodesAutoplay;
 
 let episodesWatched = [];
 
+let episodeFinished = false;
 
 document.getElementById('random-episode').onclick = function() {
     let randomEpisode = getRandomEpisode();
@@ -263,6 +264,7 @@ function playEpisode(episode, time) {
 
     source.setAttribute('src', episode.url);
     source.setAttribute('type', 'video/mp4');
+    episodeFinished = false;
 
     videoPlayer.append(source);
     videoPlayer.load();
@@ -365,6 +367,19 @@ function episodeWatched(episode) {
         localStorage.setItem('github-io-player-episodes', JSON.stringify(episodesWatched))
     }
 
+    if (episodeFinished === false) {
+        if (!localStorage.getItem('github-io-player-episodes-history')) {
+            localStorage.setItem('github-io-player-episodes-history', JSON.stringify([]));
+        }
+
+        let episodesHistory = JSON.parse(localStorage.getItem('github-io-player-episodes-history'));
+
+        episodesHistory.push(episode.index);
+
+        localStorage.setItem('github-io-player-episodes-history', JSON.stringify(episodesHistory));
+
+        episodeFinished = true;
+    }
 }
 
 function loadSavedEpisodes() {
