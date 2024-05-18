@@ -320,6 +320,12 @@ function reloadEpisodeView() {
 }
 
 function loadData(dataEncrypted, key) {
+
+    if (!key) {
+        let url = new URL(location.href);
+        key = url.searchParams.get("key");
+    }
+    
     aesGcmDecrypt(dataEncrypted, key).then(decrypted => {
         data = decrypted;
 
