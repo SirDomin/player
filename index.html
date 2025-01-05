@@ -3,16 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <title>Player</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Jost:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+
     <style>
         body {
             touch-action: manipulation;
             margin: 0;
             background: #404040;
+            font-family: 'Jost', sans-serif;
         }
         #player {
             width: 100%;
             margin: 0;
+            display: block;
         }
+
         .episode-button-utils {
             display: flex;
             justify-content: center;
@@ -44,6 +50,15 @@
             background: #404040;
         }
 
+        .video-container {
+            position: relative;
+            width: 99vw;
+            height: auto;
+            background: black;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
         .episode-button-utils:active {
             background-color: #3e8e41;
             box-shadow: 0 5px #666;
@@ -68,15 +83,180 @@
         .hidden {
             display: none;
         }
+
+        .controls {
+            position: absolute;
+            bottom: 10px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 10px;
+            visibility: visible;
+            transition: visibility 0.3s;
+        }
+
+        .episode-info {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            background: rgba(0, 0, 0, 0.6);
+            justify-content: space-around;
+            align-items: center;
+            padding: 10px;
+            font-size: 60px;
+            visibility: visible;
+            transition: visibility 0.3s;
+        }
+
+        .episode-controls {
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            transform: translate(-50%, 50%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0);
+            padding: 10px;
+            visibility: visible;
+            transition: visibility 0.3s;
+        }
+
+        .episode-controls button {
+            position: relative;
+        }
+
+        .episode-controls button:nth-child(1) {
+            left: -160px;
+        }
+
+        .episode-controls button:nth-child(2) {
+            left: 0;
+            font-size: 120px;
+        }
+
+        .episode-controls button:nth-child(3) {
+            left: 140px;
+        }
+
+        .video-container:hover .controls,
+        .video-container:hover .episode-info,
+        .video-container:hover .episode-controls {
+            visibility: visible;
+        }
+
+        button {
+            background: transparent;
+            color: #fff;
+            border: none;
+            font-size: 40px;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 25px;
+            box-sizing: border-box;
+            width: 40px;
+        }
+
+        .episode-controls button {
+            font-size: 90px;
+            width: 90px;
+        }
+
+        button:hover {
+            color: gray;
+        }
+
+        .controls button {
+            font-size: 70px;
+            width: 70px;
+        }
+
+        #progress {
+            flex: 1;
+            margin: 0 10px;
+            height: 20px;
+            width: 15rem;
+        }
+
+        :fullscreen .controls,
+        :fullscreen .episode-controls,
+        :-webkit-full-screen .controls,
+        :-webkit-full-screen .episode-controls {
+            visibility: visible;
+            background: rgba(0, 0, 0, 0);
+        }
+
+        :fullscreen .video-container,
+        :-webkit-full-screen .video-container {
+            width: 100%;
+            height: 100%;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        input[type="range"]:focus {
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+            background-color: rgba(117, 126, 117, 0.62);
+            height: 2rem;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            background-color: #3e8e41;
+            height: 2rem;
+            width: 1rem;
+        }
+
+        input[type="range"]::-moz-range-track {
+            background-color: rgba(117, 126, 117, 0.62);
+            height: 2rem;
+        }
+
+        #fastForward {
+            position: relative;
+        }
+
+        #fastForwardText {
+            position: absolute;
+            font-size: 20px;
+            top: 45%;
+            left: 40%;
+        }
+
     </style>
 </head>
 <body>
 <div class="container">
-    <video
-        id="player"
-        controls
-    >
-    </video>
+
+    <div class="video-container" id="videoContainer">
+        <video id="player"></video>
+        <div class="episode-info" id="episode-info">
+            <div id="title"></div>
+        </div>
+        <div class="episode-controls" id="episode-controls">
+            <button id="fastForward" class="fastForward"><i class="fas fa-solid fa-rotate-right"></i><span id="fastForwardText">+10s</span></button>
+            <button class="playPause"><i class="fas fa-play"></i></button>
+            <button id="nextEpisodeButton"><i class="fas fa-fast-forward"></i></button>
+        </div>
+        <div class="controls" id="controls">
+            <button class="playPause"><i class="fas fa-play"></i></button>
+            <input type="range" id="progress" min="0" max="100" value="0" step="0.1">
+            <button id="fullscreen"><i class="fas fa-expand"></i></button>
+        </div>
+    </div>
 
     <div class="episode-button-utils" id="random-episode">Play random episode</div>
 
@@ -271,7 +451,10 @@ function playEpisode(episode, time) {
     videoPlayer.currentTime = time ?? calculateTime(episode.index);
     videoPlayer.play();
 
+
     document.title = `[${episode.index}] ${episode.title}`;
+
+    document.getElementById('title').innerHTML = document.title;
     window.history.pushState("", "", `?episode=${episode.index}&t=${videoPlayer.currentTime}`);
 }
 
@@ -515,6 +698,83 @@ function getRandomEpisode() {
 
     return episodesNotWatched[Math.floor(Math.random()*episodesNotWatched.length)];
 }
+
+//controls
+
+const video = document.getElementById('player');
+const playPauseBtns = document.getElementsByClassName('playPause');
+const nextEpisodeButton = document.getElementById('nextEpisodeButton');
+const fastForwardBtn = document.getElementById('fastForward');
+const progress = document.getElementById('progress');
+const fullscreenBtn = document.getElementById('fullscreen');
+const videoContainer = document.getElementById('videoContainer');
+const controls = document.getElementById('controls');
+const episodeControls = document.getElementById('episode-controls');
+const episodeInfo =  document.getElementById('episode-info');
+
+fastForwardBtn.addEventListener('click', () => {
+    video.currentTime += 10;
+});
+
+[...playPauseBtns].forEach(button => {
+    button.addEventListener('click', () => {
+        if (video.paused || video.ended) {
+            video.play();
+            updatePlayPauseButtons('<i class="fas fa-pause"></i>');
+        } else {
+            video.pause();
+            updatePlayPauseButtons('<i class="fas fa-play"></i>')
+        }
+    });
+})
+
+
+function updatePlayPauseButtons(icon) {
+    playPauseBtns[0].innerHTML = icon;
+    playPauseBtns[1].innerHTML = icon;
+}
+
+nextEpisodeButton.addEventListener('click', () => {
+    let randomEpisode = getRandomEpisode();
+
+    playEpisode(randomEpisode);
+});
+
+video.addEventListener('timeupdate', () => {
+    progress.value = (video.currentTime / video.duration) * 100;
+});
+
+progress.addEventListener('input', () => {
+    if (video.currentTime) {
+        video.currentTime = (progress.value / 100) * video.duration;
+    }
+});
+
+fullscreenBtn.addEventListener('click', () => {
+    if (!document.fullscreenElement) {
+        videoContainer.requestFullscreen().catch(err => {
+            console.log(`Error attempting to enable fullscreen mode: ${err.message}`);
+        });
+    } else {
+        document.exitFullscreen();
+    }
+});
+
+videoContainer.addEventListener('mousemove', () => {
+    controls.style.visibility = 'visible';
+    episodeControls.style.visibility = 'visible';
+    episodeInfo.style.visibility = 'visible';
+    clearTimeout(controls.timeout);
+    controls.timeout = setTimeout(() => {
+        if (video.paused) {
+            return;
+        }
+
+        controls.style.visibility = 'hidden';
+        episodeControls.style.visibility = 'hidden';
+        episodeInfo.style.visibility = 'hidden';
+    }, 3000);
+});
 
 loadData(data, key);
 
