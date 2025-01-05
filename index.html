@@ -104,6 +104,7 @@
             right: 0;
             display: flex;
             background: rgba(0, 0, 0, 0.6);
+            color: white;
             justify-content: space-around;
             align-items: center;
             padding: 10px;
@@ -604,13 +605,6 @@ HTMLVideoElement.prototype.play = (function(play) {
 })(HTMLVideoElement.prototype.play);
 
 let player = document.getElementById('player');
-player.addEventListener('touchstart', e => {
-    if(player.paused) {
-        player.play();
-    } else {
-        player.pause();
-    }
-})
 
 player.addEventListener('progress', event => {
     if (player.currentTime + 30 > player.duration) {
