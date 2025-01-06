@@ -259,22 +259,22 @@
         </div>
     </div>
 
-    <div class="episode-button-utils" id="random-episode">Play random episode</div>
+    <div class="episode-button-utils" id="random-episode">Losowy odcinek</div>
 
     <div class="settings-container">
-        <div id="settings-toggle" class="episode-button-utils">Show settings</div>
+        <div id="settings-toggle" class="episode-button-utils">Ustawienia</div>
         <div class="steering-container hidden" id="settings">
-            <div class="episode-button-utils" id="autoplay-episode-random">Random</div>
+            <div class="episode-button-utils active" id="autoplay-episode-random">Losowo</div>
             <div class="episode-button-utils" id="autoplay-episode">Autoplay</div>
-            <div class="episode-button-utils" id="hide-watched-episodes">Hide watched episodes</div>
-            <div class="episode-button-utils" id="auto-full-screen">Auto fullScreen</div>
-            <div class="episode-button-utils" id="allow-watched">Allow watched on autoplay</div>
-            <div class="episode-button-utils" id="max-autoplay">Max episodes: 3</div>
+            <div class="episode-button-utils" id="hide-watched-episodes">Ukryj obejrzane</div>
+            <div class="episode-button-utils" id="auto-full-screen">Auto pełny ekran</div>
+            <div class="episode-button-utils" id="allow-watched">Zezwól na widziane na autoplay</div>
+            <div class="episode-button-utils" id="max-autoplay">Max liczba odcinków na auto: 3</div>
         </div>
     </div>
 
-    <div class="episode-button-utils" id="share-episode">Share Episode</div>
-    <div class="episode-button-utils" id="share-scene">Share Moment</div>
+    <div class="episode-button-utils" id="share-episode">Podziel się odcinkiem</div>
+    <div class="episode-button-utils" id="share-scene">Podziel się momentem</div>
     <div id="episodes-container">
 
     </div>
@@ -289,7 +289,7 @@ let episodes = [];
 let episodesNotWatched = [];
 
 let autoplay = false;
-let autoplayRandom = false;
+let autoplayRandom = true;
 let hideWatchedEpisodes = false;
 let autoFullScreen = false;
 let maxEpisodesAutoplay = 3;
@@ -300,6 +300,17 @@ let autoplayEpisodes = maxEpisodesAutoplay;
 let episodesWatched = [];
 
 let episodeFinished = false;
+
+const video = document.getElementById('player');
+const playPauseBtns = document.getElementsByClassName('playPause');
+const nextEpisodeButton = document.getElementById('nextEpisodeButton');
+const fastForwardBtn = document.getElementById('fastForward');
+const progress = document.getElementById('progress');
+const fullscreenBtn = document.getElementById('fullscreen');
+const videoContainer = document.getElementById('videoContainer');
+const controls = document.getElementById('controls');
+const episodeControls = document.getElementById('episode-controls');
+const episodeInfo =  document.getElementById('episode-info');
 
 document.getElementById('random-episode').onclick = function() {
     let randomEpisode = getRandomEpisode();
@@ -615,7 +626,7 @@ player.addEventListener('progress', event => {
                 autoplayNextEpisode();
 
                 if (autoFullScreen === true) {
-                    player.requestFullscreen()
+                    videoContainer.requestFullscreen()
                 }
                 autoplayEpisodes--;
 
@@ -695,33 +706,53 @@ function getRandomEpisode() {
 
 //controls
 
-const video = document.getElementById('player');
-const playPauseBtns = document.getElementsByClassName('playPause');
-const nextEpisodeButton = document.getElementById('nextEpisodeButton');
-const fastForwardBtn = document.getElementById('fastForward');
-const progress = document.getElementById('progress');
-const fullscreenBtn = document.getElementById('fullscreen');
-const videoContainer = document.getElementById('videoContainer');
-const controls = document.getElementById('controls');
-const episodeControls = document.getElementById('episode-controls');
-const episodeInfo =  document.getElementById('episode-info');
+function toggleStartPause() {
+    if (video.paused || video.ended) {
+        video.play();
+        updatePlayPauseButtons('<i class="fas fa-pause"></i>');
+    } else {
+        video.pause();
+        updatePlayPauseButtons('<i class="fas fa-play"></i>')
+    }
+}
+
+function fastForward() {
+    video.currentTime += 10;
+}
+
+function toggleFullScreen() {
+    if (!document.fullscreenElement) {
+        videoContainer.requestFullscreen().catch(err => {
+            console.log(`Error attempting to enable fullscreen mode: ${err.message}`);
+        });
+    } else {
+        document.exitFullscreen();
+    }
+}
 
 fastForwardBtn.addEventListener('click', () => {
-    video.currentTime += 10;
+    fastForward();
 });
 
 [...playPauseBtns].forEach(button => {
     button.addEventListener('click', () => {
-        if (video.paused || video.ended) {
-            video.play();
-            updatePlayPauseButtons('<i class="fas fa-pause"></i>');
-        } else {
-            video.pause();
-            updatePlayPauseButtons('<i class="fas fa-play"></i>')
-        }
+        toggleStartPause();
     });
 })
 
+document.addEventListener('keydown', e => {
+    if (e.code === 'Space') {
+        toggleStartPause();
+        e.preventDefault();
+    }
+    if (e.code === 'ArrowRight') {
+        fastForward();
+        e.preventDefault();
+    }
+    if (e.code === 'KeyF') {
+        toggleFullScreen();
+    }
+})
 
 function updatePlayPauseButtons(icon) {
     playPauseBtns[0].innerHTML = icon;
@@ -729,9 +760,7 @@ function updatePlayPauseButtons(icon) {
 }
 
 nextEpisodeButton.addEventListener('click', () => {
-    let randomEpisode = getRandomEpisode();
-
-    playEpisode(randomEpisode);
+    autoplayNextEpisode();
 });
 
 video.addEventListener('timeupdate', () => {
@@ -745,13 +774,7 @@ progress.addEventListener('input', () => {
 });
 
 fullscreenBtn.addEventListener('click', () => {
-    if (!document.fullscreenElement) {
-        videoContainer.requestFullscreen().catch(err => {
-            console.log(`Error attempting to enable fullscreen mode: ${err.message}`);
-        });
-    } else {
-        document.exitFullscreen();
-    }
+    toggleFullScreen();
 });
 
 videoContainer.addEventListener('mousemove', () => {
